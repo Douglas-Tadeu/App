@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/cadastro_screen.dart';
+import 'screens/login_screen.dart';
+import 'services/food_travel_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,13 +11,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final service = FoodTravelService(); // Instância do serviço
+
     return MaterialApp(
       title: 'Food Travel',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const CadastroScreen(), // começa na tela de cadastro
+      home: LoginScreen(service: service), // Inicia na tela de login
     );
   }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../controllers/auth_controller.dart';
+import '../services/food_travel_service.dart';
+import 'home_screen.dart';
 
 class CadastroScreen extends StatefulWidget {
-  const CadastroScreen({super.key});
+  final FoodTravelService service;
+
+  const CadastroScreen({super.key, required this.service});
 
   @override
   State<CadastroScreen> createState() => _CadastroScreenState();
@@ -22,7 +26,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
 
     setState(() => _loading = true);
 
-    final sucesso = await auth.register(
+    final resultado = await auth.register(
       _nomeController.text.trim(),
       _emailController.text.trim(),
       _senhaController.text.trim(),
@@ -30,18 +34,24 @@ class _CadastroScreenState extends State<CadastroScreen> {
 
     setState(() => _loading = false);
 
-    if (!sucesso) {
+    if (resultado['success'] != true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erro ao cadastrar")),
+        SnackBar(content: Text(resultado['message'] ?? "Erro ao cadastrar")),
       );
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Conta criada com sucesso!")),
+      SnackBar(content: Text(resultado['message'] ?? "Conta criada com sucesso!")),
     );
 
-    Navigator.pop(context);
+    // Vai direto para a HomeScreen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(service: widget.service),
+      ),
+    );
   }
 
   @override
@@ -60,14 +70,12 @@ class _CadastroScreenState extends State<CadastroScreen> {
                 validator: (v) => v!.isEmpty ? "Informe o nome" : null,
               ),
               const SizedBox(height: 10),
-
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: "E-mail"),
                 validator: (v) => v!.isEmpty ? "Informe o e-mail" : null,
               ),
               const SizedBox(height: 10),
-
               TextFormField(
                 controller: _senhaController,
                 decoration: const InputDecoration(labelText: "Senha"),
@@ -75,7 +83,6 @@ class _CadastroScreenState extends State<CadastroScreen> {
                 validator: (v) => v!.isEmpty ? "Informe a senha" : null,
               ),
               const SizedBox(height: 20),
-
               _loading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(

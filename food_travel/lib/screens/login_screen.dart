@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/auth_controller.dart';
+import '../services/food_travel_service.dart';
 import 'cadastro_screen.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final FoodTravelService service;
+
+  const LoginScreen({super.key, required this.service});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -15,8 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
   bool _loading = false;
+
   final AuthController auth = AuthController();
 
   Future<void> _login() async {
@@ -24,26 +27,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
 
-    final user = await auth.login(
+    final resultado = await auth.login(
       _emailController.text.trim(),
       _senhaController.text.trim(),
     );
 
     setState(() => _loading = false);
 
-    if (user == null) {
+    if (resultado['success'] != true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Credenciais inválidas')),
+        SnackBar(content: Text(resultado['message'] ?? "Credenciais inválidas")),
       );
       return;
     }
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('usuarioId', user.id);
+    await prefs.setString('usuarioId', resultado['user']['id'].toString());
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(
+        builder: (_) => HomeScreen(service: widget.service),
+      ),
     );
   }
 
@@ -63,27 +68,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 30),
-
-                // Email
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(labelText: "E-mail"),
-                  validator: (v) =>
-                      v!.isEmpty ? "Informe o e-mail" : null,
+                  validator: (v) => v!.isEmpty ? "Informe o e-mail" : null,
                 ),
                 const SizedBox(height: 10),
-
-                // Senha
                 TextFormField(
                   controller: _senhaController,
                   decoration: const InputDecoration(labelText: "Senha"),
                   obscureText: true,
-                  validator: (v) =>
-                      v!.isEmpty ? "Informe a senha" : null,
+                  validator: (v) => v!.isEmpty ? "Informe a senha" : null,
                 ),
                 const SizedBox(height: 20),
-
-                // Botão Login
                 _loading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
@@ -93,15 +90,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _login,
                         child: const Text("Entrar"),
                       ),
-
                 const SizedBox(height: 20),
-
                 TextButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const CadastroScreen()),
+                        builder: (_) => CadastroScreen(service: widget.service),
+                      ),
                     );
                   },
                   child: const Text("Criar conta"),
