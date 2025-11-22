@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/restaurante.dart';
 import '../models/usuario.dart';
-import '../models/prato.dart';
 import '../services/food_travel_service.dart';
 import 'restaurante_form_screen.dart';
-import 'restaurante_list_screen.dart';
 import 'prato_list_screen.dart';
 import 'usuario_form_screen.dart';
 import 'usuario_list_screen.dart';
@@ -40,7 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PratoListScreen(service: widget.service, restaurante: restaurante),
+        builder: (_) =>
+            PratoListScreen(service: widget.service, restaurante: restaurante),
       ),
     ).then((_) => _carregarDados());
   }
@@ -49,7 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FavoritoListScreen(service: widget.service, usuario: usuario),
+        builder: (_) =>
+            FavoritoListScreen(service: widget.service, usuario: usuario),
       ),
     );
   }
@@ -67,7 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => RestauranteFormScreen(service: widget.service, restaurante: restaurante),
+        builder: (_) => RestauranteFormScreen(
+            service: widget.service, restaurante: restaurante),
       ),
     ).then((_) => _carregarDados());
   }
@@ -76,9 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => UsuarioFormScreen(service: widget.service, usuario: usuario),
+        builder: (_) =>
+            UsuarioFormScreen(service: widget.service, usuario: usuario),
       ),
     ).then((_) => _carregarDados());
+  }
+
+  void _sair() {
+    Navigator.pop(context); // volta para a tela anterior (login, por exemplo)
   }
 
   @override
@@ -87,6 +93,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Food Travel - Home'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            tooltip: 'Sair',
+            onPressed: _sair,
+          ),
           IconButton(
             icon: const Icon(Icons.person),
             tooltip: 'Usuários',
@@ -103,64 +114,71 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           const Padding(
             padding: EdgeInsets.all(8.0),
-            child: Text('Restaurantes', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            child: Text('Restaurantes',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ),
-          ...restaurantes.map((r) => Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: ListTile(
-                  leading: r.imageUrl.isNotEmpty
-                      ? Image.network(r.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
-                      : const Icon(Icons.restaurant),
-                  title: Text(r.nome),
-                  subtitle: Text(r.endereco),
-                  onTap: () => _abrirPratos(r),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _abrirRestauranteForm(r),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          widget.service.removerRestaurante(r.id);
-                          _carregarDados();
-                        },
-                      ),
-                    ],
-                  ),
+          ...restaurantes.map(
+            (r) => Card(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: ListTile(
+                leading: r.imageUrl.isNotEmpty
+                    ? Image.network(r.imageUrl,
+                        width: 50, height: 50, fit: BoxFit.cover)
+                    : const Icon(Icons.restaurant),
+                title: Text(r.nome),
+                subtitle: Text(r.endereco),
+                onTap: () => _abrirPratos(r),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _abrirRestauranteForm(r),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        widget.service.removerRestaurante(r.id);
+                        _carregarDados();
+                      },
+                    ),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
           const Padding(
             padding: EdgeInsets.all(8.0),
-            child: Text('Usuários', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            child: Text('Usuários',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ),
-          ...usuarios.map((u) => Card(
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(u.nome),
-                  subtitle: Text(u.email),
-                  onTap: () => _abrirFavoritos(u),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _abrirUsuarioForm(u),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          widget.service.removerUsuario(u.id);
-                          _carregarDados();
-                        },
-                      ),
-                    ],
-                  ),
+          ...usuarios.map(
+            (u) => Card(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: ListTile(
+                leading: const Icon(Icons.person),
+                title: Text(u.nome),
+                subtitle: Text(u.email),
+                onTap: () => _abrirFavoritos(u),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () => _abrirUsuarioForm(u),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        widget.service.removerUsuario(u.id);
+                        _carregarDados();
+                      },
+                    ),
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

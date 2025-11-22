@@ -1,3 +1,4 @@
+// lib/models/restaurante.dart
 class Restaurante {
   final String id;
   final String usuarioId; // DONO DO RESTAURANTE

@@ -1,3 +1,4 @@
+// lib/services/food_travel_service.dart
 import 'package:collection/collection.dart';
 import 'package:uuid/uuid.dart';
 import '../models/usuario.dart';
@@ -13,6 +14,8 @@ class FoodTravelService {
   final List<Prato> _pratos = [];
   final List<Avaliacao> _avaliacoes = [];
   final List<Favorito> _favoritos = [];
+
+  final _uuid = const Uuid();
 
   // ------------------ USUÁRIO ------------------
   void adicionarUsuario(Usuario usuario) {
@@ -54,6 +57,12 @@ class FoodTravelService {
 
   void removerRestaurante(String id) {
     _restaurantes.removeWhere((r) => r.id == id);
+    // opcional: remover pratos/avaliacoes vinculadas
+    _pratos.removeWhere((p) => p.restauranteId == id);
+    _avaliacoes.removeWhere((a) {
+      final prato = getPratoPorId(a.pratoId);
+      return prato == null || prato.restauranteId == id;
+    });
   }
 
   // ------------------ PRATO ------------------
@@ -73,6 +82,7 @@ class FoodTravelService {
 
   void removerPrato(String id) {
     _pratos.removeWhere((p) => p.id == id);
+    _avaliacoes.removeWhere((a) => a.pratoId == id); // limpa avaliacoes do prato
   }
 
   // ------------------ AVALIAÇÃO ------------------
@@ -80,6 +90,8 @@ class FoodTravelService {
 
   List<Avaliacao> listarAvaliacoesPorPrato(String pratoId) =>
       _avaliacoes.where((a) => a.pratoId == pratoId).toList();
+
+  List<Avaliacao> listarAvaliacoes() => List.unmodifiable(_avaliacoes);
 
   double calcularMediaAvaliacoes(String pratoId) {
     final avaliacoes = listarAvaliacoesPorPrato(pratoId);
@@ -106,4 +118,49 @@ class FoodTravelService {
         _favoritos.where((f) => f.usuarioId == usuarioId).map((f) => f.pratoId);
     return _pratos.where((p) => idsFavoritos.contains(p.id)).toList();
   }
+
+  // ------------------ NOVAS FUNÇÕES DE PERMISSÃO E AJUDA ------------------
+
+  /// Retorna true se [usuarioId] for dono do restaurante [restauranteId].
+  bool usuarioEhDonoDoRestaurante(String restauranteId, String usuarioId) {
+    final rest = getRestaurantePorId(restauranteId);
+    if (rest == null) return false;
+    return rest.usuarioId == usuarioId;
+  }
+
+  /// Retorna true se [usuarioId] pode avaliar o prato [pratoId].
+  /// Regra: o dono do restaurante NÃO pode avaliar seus próprios pratos.
+  /// Também impede avaliações duplicadas do mesmo usuário no mesmo prato.
+  bool usuarioPodeAvaliar(String usuarioId, String pratoId) {
+    final prato = getPratoPorId(pratoId);
+    if (prato == null) return false;
+    final rest = getRestaurantePorId(prato.restauranteId);
+    if (rest == null) return false;
+    if (rest.usuarioId == usuarioId) return false; // dono não pode
+    // verificar se já avaliou
+    return !hasUserAvaliado(pratoId, usuarioId);
+  }
+
+  /// True se o usuário já avaliou esse prato.
+  bool hasUserAvaliado(String pratoId, String usuarioId) {
+    return _avaliacoes.any((a) => a.pratoId == pratoId && a.usuarioId == usuarioId);
+  }
+
+  /// Conveniência: cria uma avaliação nova com id automático.
+  /// Retorna true se avalição criada com sucesso (ou false caso regra impeça).
+  bool criarAvaliacao(String pratoId, String usuarioId, double nota, String comentario) {
+    if (!usuarioPodeAvaliar(usuarioId, pratoId)) return false;
+    final nova = Avaliacao(
+      id: _uuid.v4(),
+      pratoId: pratoId,
+      usuarioId: usuarioId,
+      nota: nota,
+      comentario: comentario,
+    );
+    adicionarAvaliacao(nova);
+    return true;
+  }
+
+  /// Retorna todos os pratos (útil para debug/relatórios).
+  List<Prato> listarPratosCompletos() => List.unmodifiable(_pratos);
 }
