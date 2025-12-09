@@ -1,16 +1,33 @@
-// lib/models/restaurante.dart
 class Restaurante {
   final String id;
-  final String usuarioId; // DONO DO RESTAURANTE
   final String nome;
   final String endereco;
-  final String imageUrl;
+  final String usuarioId;
+  String imageUrl;
 
   Restaurante({
     required this.id,
-    required this.usuarioId,
     required this.nome,
     required this.endereco,
-    this.imageUrl = '',
+    required this.usuarioId,
+    this.imageUrl = "",
   });
+
+  factory Restaurante.fromJson(Map<String, dynamic> json) {
+    return Restaurante(
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      nome: json['nome'] ?? '',
+      endereco: json['endereco'] ?? '',
+      usuarioId: json['usuarioId']?.toString() ?? '',
+      imageUrl: json['imageUrl'] ?? json['imagemUrl'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nome': nome,
+        'endereco': endereco,
+        'usuarioId': usuarioId,
+        'imageUrl': imageUrl,
+      };
 }

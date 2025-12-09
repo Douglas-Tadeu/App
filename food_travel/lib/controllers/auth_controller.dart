@@ -1,73 +1,54 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../core/api_config.dart';
+import '../models/login_dto.dart';
+import '../models/usuario.dart';
 
 class AuthController {
-  Future<Map<String, dynamic>> login(String email, String senha) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/auth/login");
+  static final AuthController instance = AuthController._();
+  AuthController._();
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"email": email, "senha": senha}),
-      );
+  // login: retorna Usuario em caso de sucesso (ou lança)
+  Future<Usuario?> login(String email, String senha) async {
+    final url = Uri.parse("${ApiConfig.baseUrl}/login");
+    final body = jsonEncode(LoginDto(email: email, senha: senha).toJson());
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
+    final resp = await http.post(url, headers: {'Content-Type': 'application/json'}, body: body);
 
-        // backend retorna { token, usuario: { id, nome, email, ... } }
-        final usuario = body["usuario"] ?? body["user"];
-        final token = body["token"];
-
-        return {
-          "success": true,
-          "message": "Login bem-sucedido",
-          "user": usuario,
-          "token": token,
-        };
-      } else if (response.statusCode == 401 || response.statusCode == 400) {
-        final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
-        final msg = body != null ? (body["error"] ?? body["message"] ?? "Credenciais inválidas") : "Credenciais inválidas";
-        return {"success": false, "message": msg};
-      } else {
-        return {"success": false, "message": "Erro no servidor: ${response.statusCode}"};
-      }
-    } catch (e) {
-      return {"success": false, "message": "Erro de conexão: $e"};
+    if (resp.statusCode == 200 || resp.statusCode == 201) {
+      final map = jsonDecode(resp.body);
+      // espera que o backend retorne o usuário (ou { user: {...} , token: '...'} )
+      final userJson = map['user'] ?? map;
+      final usuario = Usuario.fromJson(userJson);
+      // salva id localmente
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('ft_usuario_logado', usuario.id);
+      // opcional: salvar token se existir
+      if (map['token'] != null) await prefs.setString('ft_token', map['token']);
+      return usuario;
+    } else {
+      return null;
     }
   }
 
-  Future<Map<String, dynamic>> register(String nome, String email, String senha) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/auth/register");
+  // registro: retorna true se criado
+  Future<bool> register(Usuario u) async {
+    final url = Uri.parse("${ApiConfig.baseUrl}/usuarios");
+    final resp = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(u.toJson()));
+    return resp.statusCode == 201 || resp.statusCode == 200;
+  }
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"nome": nome, "email": email, "senha": senha}),
-      );
+  // logout: remove credenciais locais
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('ft_usuario_logado');
+    await prefs.remove('ft_token');
+  }
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        final usuario = body["usuario"] ?? body["user"];
-        final token = body["token"];
-
-        return {
-          "success": true,
-          "message": "Conta criada com sucesso!",
-          "user": usuario,
-          "token": token,
-        };
-      } else if (response.statusCode == 400) {
-        final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
-        final msg = body != null ? (body["error"] ?? body["message"] ?? "Erro no cadastro") : "Erro no cadastro";
-        return {"success": false, "message": msg};
-      } else {
-        return {"success": false, "message": "Erro no servidor: ${response.statusCode}"};
-      }
-    } catch (e) {
-      return {"success": false, "message": "Erro de conexão: $e"};
-    }
+  // util: pega id do usuario logado (SharedPreferences)
+  Future<String?> getUsuarioLogado() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('ft_usuario_logado');
   }
 }

@@ -1,27 +1,32 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
+import '../core/api_config.dart';
+import '../models/favorito.dart';
 
 class FavoritoController {
-  Future<List<dynamic>> listarFavoritos(String usuarioId) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/favoritos/$usuarioId");
-
-    final response = await http.get(url);
-    return jsonDecode(response.body);
+  Future<List<Favorito>> listarFavoritos() async {
+    final resp = await http.get(Uri.parse("${ApiConfig.baseUrl}/favoritos"));
+    final data = jsonDecode(resp.body);
+    return (data as List).map((j) => Favorito.fromJson(j)).toList();
   }
 
-  Future<Map<String, dynamic>> favoritar(String usuarioId, String pratoId) async {
-    final url = Uri.parse("${ApiConfig.baseUrl}/favoritos");
+  Future<List<Favorito>> listarFavoritosPorUsuario(String usuarioId) async {
+    final resp = await http.get(Uri.parse("${ApiConfig.baseUrl}/favoritos?usuarioId=$usuarioId"));
+    final data = jsonDecode(resp.body);
+    return (data as List).map((j) => Favorito.fromJson(j)).toList();
+  }
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "usuarioId": usuarioId,
-        "pratoId": pratoId,
-      }),
+  Future<bool> criarFavorito(Favorito f) async {
+    final resp = await http.post(
+      Uri.parse("${ApiConfig.baseUrl}/favoritos"),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(f.toJson()),
     );
+    return resp.statusCode == 201 || resp.statusCode == 200;
+  }
 
-    return jsonDecode(response.body);
+  Future<bool> deletarFavorito(String id) async {
+    final resp = await http.delete(Uri.parse("${ApiConfig.baseUrl}/favoritos/$id"));
+    return resp.statusCode == 200;
   }
 }
